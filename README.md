@@ -1,0 +1,1 @@
+This is the project that [Let's Go Further](https://lets-go-further.alexedwards.net/) guides you through building. It is a simple JSON API that allows CRUD operations to manage movies.
