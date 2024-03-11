@@ -4,15 +4,17 @@ import (
 	"errors"
 	"expvar"
 	"fmt"
-	"golang.org/x/time/rate"
-	"greenlight.nathanjsharpe.com/internal/data"
-	"greenlight.nathanjsharpe.com/internal/validator"
-	"net"
 	"net/http"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/tomasen/realip"
+	"golang.org/x/time/rate"
+
+	"greenlight.nathanjsharpe.com/internal/data"
+	"greenlight.nathanjsharpe.com/internal/validator"
 )
 
 func (app *application) recoverPanic(next http.Handler) http.Handler {
@@ -57,11 +59,7 @@ func (app *application) rateLimit(next http.Handler) http.Handler {
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if app.config.limiter.enabled {
-			ip, _, err := net.SplitHostPort(r.RemoteAddr)
-			if err != nil {
-				app.serverErrorResponse(w, r, err)
-				return
-			}
+			ip := realip.FromRequest(r)
 
 			mu.Lock()
 
@@ -143,7 +141,7 @@ func (app *application) requireActivatedUser(next http.HandlerFunc) http.Handler
 		user := app.contextGetUser(r)
 
 		if !user.Activated {
-			app.authenticationRequiredResponse(w, r)
+			app.inactiveAccountResponse(w, r)
 			return
 		}
 
